@@ -1,8 +1,22 @@
 %% === Load Unicorn EEG and behavioral events ===
-filename = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/UnicornRecorder_26_08_2025_14_31_150.csv';
-fs = 250;  % Unicorn sampling rate
-filename_results = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_oddball_block1_20250826_143417.csv';
 
+%% Cassandre
+%filename = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_unicornrecorder/results_uni_cass/UnicornRawDataRecorder_25_08_2025_15_16_060.csv';
+%filename_results = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_oddball_csv/results_cass/results_oddball_block1_20250825_151838.csv';
+
+%% Beatriz
+%filename = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_unicornrecorder/results_uni_Beatriz/UnicornRecorder_02_09_2025_14_26_170.csv';
+%filename_results = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_oddball_csv/results_Beatriz/results_oddball_block1_20250902_142845.csv';
+
+%% Solenne
+%filename = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_unicornrecorder/results_uni_solenne/UnicornRecorder_26_08_2025_14_31_150.csv';
+%filename_results = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_oddball_csv/results_solenne/results_oddball_block1_20250826_143417.csv';
+
+%% Paul
+%filename = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_unicornrecorder/results_uni_paul/UnicornRecorder_paul.csv';
+%filename_results = '/Users/iristhouard/Documents/MATLAB/codes/P300/resultats_uni/records/results_oddball_csv/results_paul/results_oddball_block1_20250825_145249csv';
+
+fs = 250;  % sampling frequency (Hz)
 datastruct = unicornrecorder_read_csv(filename, fs);
 time = (0:datastruct.numberOfSamples-1)/fs;
 
@@ -17,10 +31,11 @@ EEG_rel  = datastruct.data(t0_idx:end,:);
 %% === Parameters ===
 epoch_time = [-0.2 1];   % in seconds
 baseline   = [-0.2 0];   % baseline window
-electrodes = [3 7 9 11]; % channel indices (adapt Pz, P3, P4, Cz equivalent)
+electrodes = 1:8;        % Unicorn has 8 channels max
 alpha      = 0.05;
 save_figs  = true;
-outdir = fullfile(pwd,'ERP_results');
+
+outdir = fullfile(pwd,'ERP_results_name'); %name to change depending on the participant
 if ~exist(outdir,'dir'), mkdir(outdir); end
 
 %% === Epoch extraction (manual, since not EEGLAB .set) ===
@@ -34,12 +49,19 @@ function epochs = make_epochs(EEG_rel, events, fs, epoch_time)
     preSamp = round(abs(epoch_time(1))*fs);
     postSamp = round(epoch_time(2)*fs);
     nSamp = preSamp + postSamp + 1;
-    epochs = [];
+    
+    epochs = []; % initialise vide
+    
     for e = 1:length(events)
         center_idx = round(events(e)*fs);
         idx = (center_idx-preSamp):(center_idx+postSamp);
         if idx(1)>0 && idx(end)<=size(EEG_rel,1)
-            epochs(:,:,end+1) = EEG_rel(idx,:); %#ok<AGROW>
+            if isempty(epochs)
+                epochs = EEG_rel(idx,:);              % première epoch
+                epochs = reshape(epochs, [nSamp, nChan, 1]);
+            else
+                epochs(:,:,end+1) = EEG_rel(idx,:);   % suivantes
+            end
         end
     end
 end
@@ -94,6 +116,6 @@ for i = 1:length(electrodes)
     grid on; xlim([tvec(1) tvec(end)]);
     
     if save_figs
-        saveas(gcf, fullfile(outdir, sprintf('ERP_ttest_Ch%d.png', chanIdx)));
+        saveas(gcf, fullfile(outdir, sprintf('ERP_ttest_Cass_Ch%d.png', chanIdx)));
     end
 end
