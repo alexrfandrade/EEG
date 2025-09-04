@@ -1,11 +1,11 @@
-The analysis pipeline is organized around five main MATLAB files. 
-The entry point is main_Uni.m, which loads both the EEG recording (from Unicorn) 
-and the behavioral results (from the oddball task). These data are parsed using unicornrecorder_read_csv.m, 
-a dedicated function that extracts EEG signals and triggers from the Unicorn .csv files, and read_csv.m, 
-which imports and aligns the behavioral events. Once the data are loaded and synchronized, 
-ERP_plot.m can be used to segment the EEG into epochs, apply baseline correction, and compute 
-averaged ERPs separately for oddball and standard trials, displaying the classical P300 waveform. 
-Finally, the extended script TF_analysis.m (the new function you added) provides time–frequency analyses, 
-including Short-Time Fourier Transform (STFT) and wavelet decomposition, and computes group-level differences 
-in oscillatory activity between conditions. Together, these five files allow the user to go from raw 
-Unicorn recordings to both ERP and time–frequency characterizations of the P300 response.
+This project implements a single-trial detection pipeline for the P300 component of event-related potentials (ERP) from EEG recordings. It is designed for oddball paradigms, where the P300 is elicited by infrequent target stimuli. The pipeline processes each trial individually, detecting both the N2 (~180–300 ms) and P3 (~300–600 ms) components, evaluating the detection, and visualizing results. The code was initially adapted from work by two students from the IBEB and has been refined to handle EEG preprocessing, wavelet-based detection, evaluation, and visualization.
+
+The main script, main.m, orchestrates the workflow. It loads EEG data using FieldTrip, extracts event information from a CSV file and the corresponding .vmrk markers, and segments the EEG around each stimulus. For each trial, it calls point.m to detect N2 and P3 within the segment, evaluates the detection using evaluation.m, and stores the results in a structured array. The script allows visualization of a selected trial using graphics.m and computes overall detection accuracy for oddball trials.
+
+The point.m function detects N2 and P3 within a single EEG segment. It applies a bandpass filter (0.5–12 Hz) to remove high-frequency noise, then performs a continuous wavelet transform (CWT) in the 1–17 Hz range. Peaks corresponding to N2 (negative) and P3 (positive) candidates are identified and paired based on temporal plausibility. A Gaussian weighting favors N2–P3 pairs with expected latencies (~120 ms separation), and the most probable pair is selected. If no valid pair is found, the function returns zero for both N2 and P3.
+
+The evaluation.m function classifies the detection for each trial as correct, incorrect, or semi-correct. N2 and P3 are considered correct if they fall within the expected latency windows relative to stimulus onset, semi-correct if they are present but too close or slightly outside the windows, and incorrect if no valid peaks are detected. This provides a quantitative measure of single-trial detection performance.
+
+The graphics.m function visualizes a single trial. It plots the filtered EEG segment with markers for N2 and P3, showing latencies relative to stimulus onset, and displays the averaged CWT coefficients for low frequencies (1–17 Hz). The display is limited to 0–0.8 seconds after stimulus onset to focus on the ERP components.
+
+Overall, this pipeline provides robust single-trial P300 detection, evaluation, and visualization. It is compatible with MATLAB, requires the Signal Processing and Wavelet Toolboxes, and uses FieldTrip for EEG file handling. Users can adapt the parameters for different EEG channels, sampling rates, and file paths. Results are stored in a structured array containing detected peaks, filtered signals, CWT coefficients, trial types, evaluation outcomes, and stimulus onset times.
