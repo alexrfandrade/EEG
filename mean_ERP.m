@@ -25,7 +25,7 @@ ERP_std = mean(EEG_std.data, 3);
 %% === Prepare time axis ===
 times = EEG_odd.times; % in ms
 
-%% === ERP plotting with t-test (single electrodes) ===
+%% === ERP plotting with t-test (single electrodes) + display t-test differences and mean difference ===
 for i = 1:length(electrodes)
     chanIdx = find(strcmpi({EEG.chanlocs.labels}, electrodes{i}));
     if isempty(chanIdx)
@@ -50,6 +50,25 @@ for i = 1:length(electrodes)
     % Bonferroni correction for multiple comparisons
     p_corrected = pvals * nPoints;
     sig_mask = p_corrected < alpha;
+    
+    %% === Display significant time points, t-values, and mean difference ===
+    sig_times = times(sig_mask);
+    sig_tvals = tvals(sig_mask);
+    
+    if ~isempty(sig_times)
+        fprintf('\nElectrode: %s\n', electrodes{i});
+        fprintf('Significant differences (p<%.2f, Bonferroni corrected):\n', alpha);
+        for k = 1:length(sig_times)
+            % Compute mean amplitude difference at this time point
+            idx_time = find(times == sig_times(k));
+            mean_diff_k = mean(data_odd(:,idx_time)) - mean(data_std(:,idx_time));
+            
+            fprintf('Time: %.1f ms, t = %.3f, Mean difference = %.3f µV\n', ...
+                sig_times(k), sig_tvals(k), mean_diff_k);
+        end
+    else
+        fprintf('\nElectrode: %s - No significant differences detected (p<%.2f corrected)\n', electrodes{i}, alpha);
+    end
     
     % Plot ERP for oddball vs standard
     figure('Color','w'); hold on;
