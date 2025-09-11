@@ -82,14 +82,14 @@ for i = electrodes
 
     figure('Color','w','Name',['STFT - Ch' num2str(i)]);
     subplot(1,2,1);
-    imagesc(Tms,F,10*log10(Pstd)); axis xy;
+    imagesc(Tms,F,Pstd); axis xy;
     xlabel('Time (ms)'); ylabel('Frequency (Hz)'); 
     title(['Standard - Ch' num2str(i)]); 
     colorbar;
     xlim([-200 1000]); ylim([0 40]);
 
     subplot(1,2,2);
-    imagesc(Tms,F,10*log10(Podd)); axis xy;
+    imagesc(Tms,F,Podd); axis xy;
     xlabel('Time (ms)'); ylabel('Frequency (Hz)'); 
     title(['Oddball - Ch' num2str(i)]); 
     colorbar;
@@ -101,36 +101,42 @@ for i = electrodes
 end
 
 %% === Wavelet (simpler version) ===
-for i = electrodes
+for i = 1:nChan
     sig_odd = mean(squeeze(epochs_odd(:,i,:)),2);
     sig_std = mean(squeeze(epochs_std(:,i,:)),2);
 
-    % CWT Morlet
-    [cfs_odd,Fodd] = cwt(sig_odd,fs,'amor');
-    [cfs_std,Fstd] = cwt(sig_std,fs,'amor');
+    % Compute CWT
+    [cfs_odd,Fodd,coi_odd] = cwt(sig_odd,fs,'amor');
+    [cfs_std,Fstd,coi_std] = cwt(sig_std,fs,'amor');
 
+    pow_odd = abs(cfs_odd).^2;
+    pow_std = abs(cfs_std).^2;
+
+    % Prepare meshgrid
+    [Xstd,Ystd] = meshgrid(tvec,Fstd);
+    [Xodd,Yodd] = meshgrid(tvec,Fodd);
+
+    % Plot Standard
     figure('Color','w','Name',['Wavelet - Ch' num2str(i)]);
-
     subplot(1,2,1);
-    surface(tvec,Fstd,abs(cfs_std)); 
-    shading interp; axis tight; set(gca,'YScale','log');
-    xlabel('Time (ms)'); ylabel('Frequency (Hz)');
-    title(['Standard - Ch' num2str(i)]);
-    colorbar; 
-    xlim([-200 1000]); ylim([0 40]);
+    surface(Xstd,Ystd,pow_std); shading interp; axis tight;
+    set(gca,'YScale','linear'); xlabel('Time (ms)'); ylabel('Frequency (Hz)');
+    title(['Standard - Ch' num2str(i)]); colorbar;
+    xlim([-200 700]); ylim([0 35]);
+    hold on;
+    plot((coi_std-1)/fs*1000 + epoch_time(1)*1000, Fstd(end)*ones(size(coi_std)),'w--','LineWidth',2);
 
+    % Plot Oddball
     subplot(1,2,2);
-    surface(tvec,Fodd,abs(cfs_odd)); 
-    shading interp; axis tight; set(gca,'YScale','log');
-    xlabel('Time (ms)'); ylabel('Frequency (Hz)');
-    title(['Oddball - Ch' num2str(i)]);
-    colorbar;
-    xlim([-200 1000]); ylim([0 40]);
-
-
+    surface(Xodd,Yodd,pow_odd); shading interp; axis tight;
+    set(gca,'YScale','linear'); xlabel('Time (ms)'); ylabel('Frequency (Hz)');
+    title(['Oddball - Ch' num2str(i)]); colorbar;
+    xlim([-200 700]); ylim([0 35]);
+    hold on;
+    plot((coi_odd-1)/fs*1000 + epoch_time(1)*1000, Fodd(end)*ones(size(coi_odd)),'w--','LineWidth',2);
 
     if save_figs
-        saveas(gcf, fullfile(outdir, sprintf('Wavelet_Ch%d.png',i)));
+        saveas(gcf, fullfile(outdir, sprintf('Wavelet_Ch%d_raw_coi.png',i)));
     end
 end
 
